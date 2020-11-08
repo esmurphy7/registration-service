@@ -1,7 +1,7 @@
+from __future__ import print_function
 import argparse
 import pickle
 import os.path
-from __future__ import print_function
 from googleapiclient import errors
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -21,11 +21,11 @@ def register_course_feed(project_id, topic_name, classroom_service, course_id):
         "feed": {
             "feedType": "COURSE_WORK_CHANGES",
             "courseWorkChangesInfo": {
-                "courseId": f"{course_id}"
+                "courseId": "{}".format(course_id)
             }
         },
         "cloudPubsubTopic": {
-            "topicName": f"projects/{project_id}/topics/{topic_name}"
+            "topicName": "projects/{}/topics/{}".format(project_id, topic_name)
         }
     }
 
@@ -38,13 +38,10 @@ if __name__ == "__main__":
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("project_id", help="Google Cloud project ID")
-    parser.add_argument("topic_name", help="Pub/Sub topic name")
+    parser.add_argument("project_id", type=str, help="Google Cloud project ID")
+    parser.add_argument("topic_name", type=str, help="Pub/Sub topic name")    
+    parser.add_argument("course_id", help=register_course_feed.__doc__)
     
-    subparsers = parser.add_subparsers(dest="command")
-
-    course_parser = subparsers.add_parser("course", help=register_course_feed.__doc__)
-
     args = parser.parse_args()
 
     SCOPES = [
@@ -65,8 +62,13 @@ if __name__ == "__main__":
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
+            dirname = os.path.dirname(__file__)
+            filename = os.path.join(dirname, 'client_secret_575508229896-7l5qb014c1soen9qhe19p905akbkls4d.apps.googleusercontent.com.json')
+            flow = InstalledAppFlow.from_client_secrets_file(filename, SCOPES)
+            flow.redirect_uri = "https://www.example.com"
+            # creds = flow.run_local_server(port=0)
+            creds = flow.
+
         # Save the credentials for the next run
         with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
@@ -74,4 +76,4 @@ if __name__ == "__main__":
     classroom_service = build('classroom', 'v1', credentials=creds)
 
     if args.command == "course":
-        register_course_feed(args.project_id, args.topic_name, classroom_service, course_id)
+        register_course_feed(args.project_id, args.topic_name, classroom_service, args.course_id)
